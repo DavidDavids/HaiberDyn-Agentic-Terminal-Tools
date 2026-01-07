@@ -1,0 +1,12 @@
+**/*.ts
+**/.git*
+**/.eslintignore
+**/.gitignore
+src/
+.vscode/
+node_modules/
+*.vsix
+.eslintrc*
+eslint.config.js
+tsconfig.json
+*.md

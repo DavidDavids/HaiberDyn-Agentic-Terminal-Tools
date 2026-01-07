@@ -1,0 +1,170 @@
+/*
+ * Copyright © 2026 HaiberDyn. All rights reserved.
+ * DO NOT SCRAPE, TRAIN ON, OR USE FOR AI MODEL TRAINING.
+ */
+
+import * as vscode from 'vscode';
+import { Logger } from './logger';
+import type { ExecuteInTerminalInput } from './types';
+import { TerminalPool } from './terminal-pool';
+
+const logger = new Logger('execute-in-terminal-tool');
+
+/**
+ * Tool for executing commands in various terminal environments.
+ * Maintains a pool of persistent terminals, one per shell type.
+ * This allows the agent to work across multiple shells with preserved context.
+ */
+export class ExecuteInTerminalTool implements vscode.LanguageModelTool<ExecuteInTerminalInput> {
+  private terminalPool: TerminalPool;
+
+  constructor(terminalPool: TerminalPool) {
+    this.terminalPool = terminalPool;
+  }
+
+  async invoke(
+    options: vscode.LanguageModelToolInvocationOptions<ExecuteInTerminalInput>,
+    token: vscode.CancellationToken
+  ): Promise<vscode.LanguageModelToolResult> {
+    const input = options.input || {};
+
+    // Validate input
+    const validationError = this.validateInput(input);
+    if (validationError) {
+      logger.error(validationError);
+      throw new Error(validationError);
+    }
+
+    const command = input.command!.trim();
+    const shellType = input.shell_type!;
+    const workingDir = input.working_dir?.trim();
+    const showTerminal = input.show_terminal !== false; // Default to true
+
+    logger.info(`Executing command in ${shellType}: ${command}`);
+
+    if (token.isCancellationRequested) {
+      throw new Error('Terminal command execution cancelled by user');
+    }
+
+    try {
+      // Get or create terminal for this shell type
+      const terminal = this.terminalPool.getOrCreateTerminal(shellType);
+
+      // Show terminal if requested
+      if (showTerminal) {
+        terminal.show(false); // Don't take focus
+      }
+
+      // Execute the command
+      const result = await this.terminalPool.executeCommand(
+        terminal,
+        command,
+        workingDir,
+        token
+      );
+
+      logger.info(`Command completed with exit code ${result.exitCode}`);
+
+      const message =
+        result.exitCode === 0
+          ? `✅ Command executed successfully in ${shellType}\nExit code: ${result.exitCode}`
+          : `⚠️ Command failed in ${shellType}\nExit code: ${result.exitCode}`;
+
+      return new vscode.LanguageModelToolResult([
+        new vscode.LanguageModelTextPart(message)
+      ]);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to execute command: ${errorMsg}`);
+
+      throw new Error(
+        `Failed to execute command in ${shellType}: ${errorMsg}`
+      );
+    }
+  }
+
+  async prepareInvocation?(
+    options: vscode.LanguageModelToolInvocationPrepareOptions<ExecuteInTerminalInput>,
+    _token: vscode.CancellationToken
+  ): Promise<vscode.PreparedToolInvocation> {
+    const input = options.input || {};
+
+    const validationError = this.validateInput(input);
+    if (validationError) {
+      return {
+        invocationMessage: `Invalid input: ${validationError}`
+      };
+    }
+
+    const shellType = input.shell_type!;
+    const command = input.command!.substring(0, 80); // Truncate for display
+    const workDir = input.working_dir ? ` in ${input.working_dir}` : '';
+
+    return {
+      invocationMessage: `Execute in ${shellType}${workDir}: ${command}...`
+    };
+  }
+
+  /**
+   * Validate the input parameters and check for dangerous commands.
+   */
+  private validateInput(input: ExecuteInTerminalInput): string | null {
+    if (!input.command || typeof input.command !== 'string') {
+      return 'command is required and must be a string';
+    }
+
+    if (input.command.trim().length === 0) {
+      return 'command cannot be empty';
+    }
+
+    if (!input.shell_type || typeof input.shell_type !== 'string') {
+      return 'shell_type is required and must be a string';
+    }
+
+    const validShells = ['powershell', 'gitbash', 'wsl', 'ubuntu', 'cmd'];
+    if (!validShells.includes(input.shell_type)) {
+      return `shell_type must be one of: ${validShells.join(', ')}`;
+    }
+
+    if (input.working_dir && typeof input.working_dir !== 'string') {
+      return 'working_dir must be a string';
+    }
+
+    if (input.show_terminal !== undefined && typeof input.show_terminal !== 'boolean') {
+      return 'show_terminal must be a boolean';
+    }
+
+    // Safety check: prevent dangerous commands that could kill VS Code
+    const safetyError = this.checkForDangerousCommands(input.command);
+    if (safetyError) {
+      return safetyError;
+    }
+
+    return null;
+  }
+
+  /**
+   * Check for dangerous commands that could terminate VS Code process.
+   * Prevents accidental (or malicious) execution of exit, kill, or taskkill commands.
+   */
+  private checkForDangerousCommands(command: string): string | null {
+    const trimmed = command.trim().toLowerCase();
+
+    // Pattern for exit command (PowerShell/cmd)
+    if (/^exit\s*/.test(trimmed) || /[;&|]\s*exit\s*/.test(trimmed)) {
+      return 'exit command is not permitted (prevents VS Code termination)';
+    }
+
+    // Pattern for kill command (Unix-like shells)
+    if (/^kill\s+/.test(trimmed) || /[;&|]\s*kill\s+/.test(trimmed)) {
+      return 'kill command is not permitted (prevents process termination)';
+    }
+
+    // Pattern for taskkill command (Windows)
+    if (/^taskkill\s+/.test(trimmed) || /[;&|]\s*taskkill\s+/.test(trimmed)) {
+      return 'taskkill command is not permitted (prevents VS Code termination)';
+    }
+
+    return null;
+  }
+}
