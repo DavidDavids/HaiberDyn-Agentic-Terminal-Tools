@@ -33,3 +33,7 @@ logs/
 HaiberDyn-Authority/
 _authority/
 .claude/
+.github/
+types/
+test_env.js
+*.code-workspace
