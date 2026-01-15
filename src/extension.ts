@@ -19,6 +19,11 @@ export function activate(context: vscode.ExtensionContext): void {
   logger.info('Extension activating...');
   console.warn('🔥 HAIBERDYN TERMINALS EXTENSION ACTIVATING 🔥');
 
+  const isAntigravity = vscode.workspace.getConfiguration('antigravity').has('missionControl');
+  if (isAntigravity) {
+    logger.info('Antigravity detected: Enabling Autonomous Action Space tools.');
+  }
+
   try {
     // Initialize the terminal pool
     terminalPool = new TerminalPool();
