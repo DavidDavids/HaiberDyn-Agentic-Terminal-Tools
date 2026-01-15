@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import { OpenTerminalProfileTool } from './tool';
 import { ExecuteInTerminalTool } from './execute-in-terminal';
 import { TerminalPool } from './terminal-pool';
+import { ListTerminalProfilesTool, ListManagedTerminalsTool } from './listing-tools';
 import { Logger } from './logger';
 
 const logger = new Logger('extension');
@@ -26,10 +27,22 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     // Register the profile opening tool
-    const profileTool = new OpenTerminalProfileTool();
+    const profileTool = new OpenTerminalProfileTool(terminalPool);
     const profileDisposable = vscode.lm.registerTool('haiberdyn_open_terminal_profile', profileTool);
     context.subscriptions.push(profileDisposable);
     logger.info('Registered tool: haiberdyn_open_terminal_profile');
+
+    const listProfilesTool = new ListTerminalProfilesTool();
+    context.subscriptions.push(
+      vscode.lm.registerTool('haiberdyn_list_terminal_profiles', listProfilesTool)
+    );
+    logger.info('Registered tool: haiberdyn_list_terminal_profiles');
+
+    const listManagedTool = new ListManagedTerminalsTool(terminalPool);
+    context.subscriptions.push(
+      vscode.lm.registerTool('haiberdyn_list_managed_terminals', listManagedTool)
+    );
+    logger.info('Registered tool: haiberdyn_list_managed_terminals');
 
     // Register the main execute-in-terminal tool
     const executeTool = new ExecuteInTerminalTool(terminalPool);

@@ -1,14 +1,15 @@
 {
-  "name": "haiberdyn-terminals-4-vscode",
-  "version": "1.1.3",
+  "name": "haiberdyn-agentic-terminal-tools",
+  "displayName": "HaiberDyn Agentic Terminal Tools",
+  "version": "1.1.8",
   "publisher": "haiberdyn",
-  "description": "Unchains your chat-based agent's terminal access. Replacement for run_in_terminal that enables Copilot to access all your terminal profiles (WSL, PowerShell, Git Bash, Ubuntu, cmd) instead of just one default shell.",
+  "description": "Enables agentic terminal access across every profile (WSL, PowerShell, Git Bash, Ubuntu, cmd) without VS Code gatekeeping.",
   "icon": "haiberdyn_terminal.png",
   "license": "MIT",
   "author": "HaiberDyn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/haiberdyn/haiberdyn-terminals-4-vscode"
+    "url": "https://github.com/haiberdyn/haiberdyn-agentic-terminal-tools"
   },
   "engines": {
     "vscode": "^1.107.0",
@@ -26,8 +27,8 @@
         "displayName": "Open Terminal Profile",
         "icon": "$(terminal)",
         "toolReferenceName": "openTerminal",
-        "userDescription": "Opens a terminal using a VS Code terminal profile. Use this in place of run_in_terminal for terminal operations. Supports profile names like WSL, Git Bash, and PowerShell.",
-        "modelDescription": "Opens a terminal using a VS Code terminal profile (e.g., 'WSL', 'Git Bash', 'PowerShell'). Use this in place of run_in_terminal for terminal operations.",
+        "userDescription": "Opens a terminal using a VS Code terminal profile. First call haiberdyn_list_terminal_profiles and pass one of the exact names it returns (case-sensitive). This guarantees the profile name exists before executing the command.",
+        "modelDescription": "Opens a terminal using a VS Code terminal profile (e.g., 'WSL', 'Git Bash', 'PowerShell'). Always call haiberdyn_list_terminal_profiles before this tool and supply one of those exact profileName results to ensure the command returns the terminal instance.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -35,6 +36,10 @@
             "profileName": {
               "type": "string",
               "description": "Name of VS Code terminal profile to launch (case-sensitive)"
+            },
+            "comment": {
+              "type": "string",
+              "description": "Optional comment describing the terminal's purpose"
             }
           },
           "required": [
@@ -43,13 +48,47 @@
         }
       },
       {
+        "name": "haiberdyn_list_terminal_profiles",
+        "tags": ["terminal", "profiles", "list"],
+        "displayName": "List Terminal Profiles",
+        "icon": "$(list-selection)",
+        "toolReferenceName": "listTerminalProfiles",
+        "userDescription": "Lists configured VS Code terminal profiles across each platform.",
+        "modelDescription": "Returns the known terminal profile names, paths, and args from VS Code settings so agents can open the right shell.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "haiberdyn_list_managed_terminals",
+        "tags": ["terminal", "pool", "list"],
+        "displayName": "List Managed Terminals",
+        "icon": "$(list-selection)",
+        "toolReferenceName": "listManagedTerminals",
+        "userDescription": "Lists active terminals in the HaiberDyn pool, including IDs and comments.",
+        "modelDescription": "Shows every managed terminal's ID, shell, comment, and last-used timestamp so agents can reuse them safely.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "shell_type": {
+              "type": "string",
+              "enum": ["powershell", "gitbash", "wsl", "ubuntu", "cmd"],
+              "description": "Optional shell type filter"
+            }
+          }
+        }
+      },
+      {
         "name": "haiberdyn_execute_in_terminal",
         "tags": ["terminal", "commands", "haiberdyn"],
         "displayName": "Execute In Terminal",
         "icon": "$(debug-console)",
         "toolReferenceName": "executeInTerminal",
-        "userDescription": "Execute commands in various terminal environments (PowerShell, WSL, Git Bash, Ubuntu, cmd) with persistent terminal pooling. Use this in place of run_in_terminal for all terminal command execution.",
-        "modelDescription": "Execute commands in various terminal environments (PowerShell, WSL, Git Bash, etc.) with persistent terminal pooling for context preservation. Use this in place of run_in_terminal.",
+        "userDescription": "Execute commands in a tracked terminal (use the terminal_id returned by haiberdyn_open_terminal_profile). This tool does not create terminals—it writes into an existing terminal managed by the pool.",
+        "modelDescription": "Execute commands in a tracked terminal (identified via terminal_id from haiberdyn_open_terminal_profile). The tool requires an existing terminal_id and does not create new shells.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
@@ -67,7 +106,7 @@
                 "ubuntu",
                 "cmd"
               ],
-              "description": "The shell environment to execute in. Uses persistent terminal pool."
+              "description": "Optional shell hint (for logging) when executing a command in an existing terminal"
             },
             "working_dir": {
               "type": "string",
@@ -76,11 +115,19 @@
             "show_terminal": {
               "type": "boolean",
               "description": "Whether to show the terminal in the UI (default: true)"
+            },
+            "terminal_id": {
+              "type": "string",
+              "description": "ID of a previously opened terminal to reuse"
+            },
+            "comment": {
+              "type": "string",
+              "description": "Optional comment describing the terminal's purpose"
             }
           },
           "required": [
             "command",
-            "shell_type"
+            "terminal_id"
           ]
         }
       }
@@ -90,18 +137,29 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "lint": "eslint src/**/*.ts",
+    "test": "cross-env TS_NODE_PROJECT=tsconfig.test.json mocha --require ts-node/register 'tests/**/*.test.ts'",
     "prebuild": "npm run lint",
     "package": "vsce package"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.1",
     "@types/node": "^25.0.3",
     "@types/vscode": "^1.107.0",
     "@typescript-eslint/eslint-plugin": "^8.52.0",
     "@typescript-eslint/parser": "^8.52.0",
     "@vscode/vsce": "^3.7.1",
+    "chai": "^4.3.8",
+    "cross-env": "^7.0.3",
     "eslint": "^9.39.0",
+    "mock-require": "^3.0.0",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.52.0"
+  },
+  "overrides": {
+    "glob": "11.1.0"
   }
 }

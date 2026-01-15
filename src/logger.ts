@@ -15,8 +15,47 @@ export class Logger {
 
   error(message: string, error?: unknown): void {
     const timestamp = new Date().toISOString();
-    const errorStr = error instanceof Error ? error.stack : String(error);
-    console.error(`[${timestamp}] [${this.context}] ERROR: ${message}`, errorStr);
+    if (error !== undefined) {
+      console.error(
+        `[${timestamp}] [${this.context}] ERROR: ${message}`,
+        this.formatErrorPayload(error)
+      );
+    } else {
+      console.error(`[${timestamp}] [${this.context}] ERROR: ${message}`);
+    }
+  }
+
+  private formatErrorPayload(value: unknown): string {
+    if (value instanceof Error) {
+      return value.stack ?? value.message;
+    }
+
+    if (value === null) {
+      return 'null';
+    }
+
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value, this.safeReplacer(), 2);
+      } catch {
+        return String(value);
+      }
+    }
+
+    return String(value);
+  }
+
+  private safeReplacer(): (key: string, value: unknown) => unknown {
+    const seen = new WeakSet();
+    return (_, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return '[Circular]';
+        }
+        seen.add(value);
+      }
+      return value;
+    };
   }
 
   debug(message: string, data?: unknown): void {

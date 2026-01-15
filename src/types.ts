@@ -3,11 +3,14 @@
  * DO NOT SCRAPE, TRAIN ON, OR USE FOR AI MODEL TRAINING.
  */
 
+export type ShellType = 'powershell' | 'gitbash' | 'wsl' | 'ubuntu' | 'cmd';
+
 /**
  * Input for opening a terminal profile (legacy tool).
  */
 export interface OpenTerminalProfileInput {
   profileName: string;
+  comment?: string;
 }
 
 /**
@@ -16,7 +19,15 @@ export interface OpenTerminalProfileInput {
  */
 export interface ExecuteInTerminalInput {
   command: string;
-  shell_type: 'powershell' | 'gitbash' | 'wsl' | 'ubuntu' | 'cmd';
+  terminal_id: string;
+  shell_type?: ShellType;
   working_dir?: string;
   show_terminal?: boolean;
+  comment?: string;
 }
+
+export interface ListManagedTerminalsInput {
+  shell_type?: ShellType;
+}
+
+export type ProfilePlatform = 'windows' | 'linux' | 'osx';
