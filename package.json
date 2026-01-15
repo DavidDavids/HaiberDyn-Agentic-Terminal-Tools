@@ -12,7 +12,7 @@
     "url": "https://github.com/haiberdyn/haiberdyn-agentic-terminal-tools"
   },
   "engines": {
-    "vscode": "^1.100.0",
+    "vscode": "^1.104.0",
     "node": "^20.0.0"
   },
   "main": "./dist/extension.js",
