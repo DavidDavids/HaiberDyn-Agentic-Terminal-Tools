@@ -1,7 +1,7 @@
 {
   "name": "haiberdyn-agentic-terminal-tools",
   "displayName": "HaiberDyn Agentic Terminal Tools",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "publisher": "haiberdyn",
   "description": "Enables agentic terminal access across every profile (WSL, PowerShell, Git Bash, Ubuntu, cmd) without VS Code gatekeeping.",
   "icon": "haiberdyn_terminal.png",
@@ -12,7 +12,7 @@
     "url": "https://github.com/haiberdyn/haiberdyn-agentic-terminal-tools"
   },
   "engines": {
-    "vscode": "^1.104.0",
+    "vscode": "^1.107.0",
     "node": "^20.0.0"
   },
   "main": "./dist/extension.js",
