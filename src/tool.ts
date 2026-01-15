@@ -6,10 +6,12 @@
 import * as vscode from 'vscode';
 import { Logger } from './logger';
 import type { OpenTerminalProfileInput } from './types';
+import { TerminalPool } from './terminal-pool';
 
 const logger = new Logger('haiberdyn-terminal-profile');
 
 export class OpenTerminalProfileTool implements vscode.LanguageModelTool<OpenTerminalProfileInput> {
+  constructor(private terminalPool: TerminalPool) {}
   async invoke(
     options: vscode.LanguageModelToolInvocationOptions<OpenTerminalProfileInput>,
     token: vscode.CancellationToken
@@ -30,6 +32,7 @@ export class OpenTerminalProfileTool implements vscode.LanguageModelTool<OpenTer
       throw new Error(error);
     }
 
+    const comment = input.comment?.trim();
     logger.info(`Opening terminal profile: ${profileName}`);
 
     if (token.isCancellationRequested) {
@@ -37,17 +40,17 @@ export class OpenTerminalProfileTool implements vscode.LanguageModelTool<OpenTer
     }
 
     try {
-      const terminal = await vscode.commands.executeCommand<vscode.Terminal>(
-        'workbench.action.terminal.newWithProfile',
-        { profileName }
-      );
-
-      if (!terminal) {
-        throw new Error(`Command did not return terminal instance for profile: ${profileName}`);
-      }
-
-      logger.info(`Terminal opened successfully: ${profileName}`);
-      const message = `✅ Opened '${profileName}' terminal`;
+      const metadata = await this.terminalPool.openTerminalProfile(profileName, comment, token);
+      const actualProfileName = metadata.profileName ?? profileName;
+      logger.info(`Terminal opened successfully: ${actualProfileName}`, {
+        id: metadata.id,
+        comment: metadata.comment
+      });
+      const commentSuffix = metadata.comment ? ` (${metadata.comment})` : '';
+      const matchSuffix = actualProfileName !== profileName
+        ? ` (matched from '${profileName}')`
+        : '';
+      const message = `✅ Opened '${actualProfileName}' terminal (ID: ${metadata.id}${commentSuffix})${matchSuffix}`;
       
       return new vscode.LanguageModelToolResult([
         new vscode.LanguageModelTextPart(message)
@@ -73,9 +76,9 @@ export class OpenTerminalProfileTool implements vscode.LanguageModelTool<OpenTer
         invocationMessage: 'Invalid input: profileName (string) required'
       };
     }
-    return { invocationMessage: `Opening terminal profile: ${input.profileName}` };
+    const commentPart = input.comment ? ` with comment: ${input.comment}` : '';
+    return { invocationMessage: `Opening terminal profile: ${input.profileName}${commentPart}` };
   }
+
 }
 
-// Export an instance for VS Code to use
-export const openTerminalProfileTool = new OpenTerminalProfileTool();
