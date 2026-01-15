@@ -1,7 +1,7 @@
 {
   "name": "haiberdyn-agentic-terminal-tools",
   "displayName": "HaiberDyn Agentic Terminal Tools",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "publisher": "haiberdyn",
   "description": "Enables agentic terminal access across every profile (WSL, PowerShell, Git Bash, Ubuntu, cmd) without VS Code gatekeeping.",
   "icon": "haiberdyn_terminal.png",
@@ -12,7 +12,7 @@
     "url": "https://github.com/haiberdyn/haiberdyn-agentic-terminal-tools"
   },
   "engines": {
-    "vscode": "^1.107.0",
+    "vscode": "^1.100.0",
     "node": "^20.0.0"
   },
   "main": "./dist/extension.js",
@@ -23,7 +23,11 @@
     "languageModelTools": [
       {
         "name": "haiberdyn_open_terminal_profile",
-        "tags": ["terminal", "profiles", "haiberdyn"],
+        "tags": [
+          "terminal",
+          "profiles",
+          "haiberdyn"
+        ],
         "displayName": "Open Terminal Profile",
         "icon": "$(terminal)",
         "toolReferenceName": "openTerminal",
@@ -49,7 +53,11 @@
       },
       {
         "name": "haiberdyn_list_terminal_profiles",
-        "tags": ["terminal", "profiles", "list"],
+        "tags": [
+          "terminal",
+          "profiles",
+          "list"
+        ],
         "displayName": "List Terminal Profiles",
         "icon": "$(list-selection)",
         "toolReferenceName": "listTerminalProfiles",
@@ -63,7 +71,11 @@
       },
       {
         "name": "haiberdyn_list_managed_terminals",
-        "tags": ["terminal", "pool", "list"],
+        "tags": [
+          "terminal",
+          "pool",
+          "list"
+        ],
         "displayName": "List Managed Terminals",
         "icon": "$(list-selection)",
         "toolReferenceName": "listManagedTerminals",
@@ -75,7 +87,13 @@
           "properties": {
             "shell_type": {
               "type": "string",
-              "enum": ["powershell", "gitbash", "wsl", "ubuntu", "cmd"],
+              "enum": [
+                "powershell",
+                "gitbash",
+                "wsl",
+                "ubuntu",
+                "cmd"
+              ],
               "description": "Optional shell type filter"
             }
           }
@@ -83,7 +101,11 @@
       },
       {
         "name": "haiberdyn_execute_in_terminal",
-        "tags": ["terminal", "commands", "haiberdyn"],
+        "tags": [
+          "terminal",
+          "commands",
+          "haiberdyn"
+        ],
         "displayName": "Execute In Terminal",
         "icon": "$(debug-console)",
         "toolReferenceName": "executeInTerminal",
@@ -146,7 +168,7 @@
     "@types/chai": "^4.3.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^25.0.3",
-    "@types/vscode": "^1.107.0",
+    "@types/vscode": "^1.104.0",
     "@typescript-eslint/eslint-plugin": "^8.52.0",
     "@typescript-eslint/parser": "^8.52.0",
     "@vscode/vsce": "^3.7.1",
