@@ -33,7 +33,9 @@ logs/
 HaiberDyn-Authority/
 _authority/
 .claude/
-.github/
+.github/*
+!.github/workflows/**
+!.github/copilot-instructions.md
 types/
 test_env.js
 *.code-workspace
